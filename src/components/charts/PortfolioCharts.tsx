@@ -15,7 +15,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  TreeMap
+  Treemap
 } from 'recharts';
 
 interface TokenBalance {
@@ -150,7 +150,7 @@ export function PortfolioCharts({ tokenBalances, portfolio, className = '' }: Po
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(1)}%`}
+                  label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(1)}%`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
@@ -227,10 +227,9 @@ export function PortfolioCharts({ tokenBalances, portfolio, className = '' }: Po
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Asset Distribution</h3>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <TreeMap
+            <Treemap
               data={treeMapData}
               dataKey="size"
-              ratio={4/3}
               stroke="#fff"
               fill="#8884d8"
             />

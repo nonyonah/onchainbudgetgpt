@@ -249,4 +249,4 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   );
 };
 
-export default ChatInterface;
+export { ChatInterface };
