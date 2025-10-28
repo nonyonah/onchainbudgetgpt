@@ -3,29 +3,7 @@
 import React, { useState } from 'react';
 import { SpendingCharts } from '@/components/charts/SpendingCharts';
 import { PortfolioCharts } from '@/components/charts/PortfolioCharts';
-
-interface Transaction {
-  id: string;
-  amount: number;
-  category: string;
-  date: string | Date;
-  description: string;
-  type: 'income' | 'expense';
-}
-
-interface TokenBalance {
-  symbol: string;
-  name: string;
-  balance: string;
-  value?: number;
-  isNative: boolean;
-}
-
-interface Portfolio {
-  totalValue: number;
-  totalChange24h: number;
-  tokens: TokenBalance[];
-}
+import { TokenBalance, Portfolio, Transaction } from '@/types/shared';
 
 interface FinancialDashboardProps {
   transactions: Transaction[];
@@ -129,7 +107,7 @@ export function FinancialDashboard({
           </div>
           <div className="mt-2">
             <span className="text-sm text-gray-500">
-              {tokenBalances.filter(t => t.value > 0).length} with value
+              {tokenBalances.filter(t => t.value && t.value > 0).length} with value
             </span>
           </div>
         </div>

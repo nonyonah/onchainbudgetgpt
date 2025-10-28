@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import WalletProvider from "@/components/providers/WalletProvider";
@@ -18,7 +18,11 @@ export const metadata: Metadata = {
   description: "AI budgeting assistant for onchain and offchain finances",
   keywords: ["crypto", "budget", "AI", "finance", "wallet", "DeFi"],
   authors: [{ name: "OnchainBudget Team" }],
-  viewport: "width=device-width, initial-scale=1",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
   themeColor: "#0a0a0a",
 };
 

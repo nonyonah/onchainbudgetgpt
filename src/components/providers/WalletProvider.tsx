@@ -9,12 +9,23 @@ interface WalletProviderProps {
   children: ReactNode;
 }
 
+// Error fallback component
+function WalletErrorFallback({ children }: { children: ReactNode }) {
+  console.warn('Wallet provider failed to initialize, continuing without wallet functionality');
+  return <>{children}</>;
+}
+
 export default function WalletProvider({ children }: WalletProviderProps) {
-  return (
-    <WagmiProvider config={wagmiConfig}>
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
-    </WagmiProvider>
-  );
+  try {
+    return (
+      <WagmiProvider config={wagmiConfig}>
+        <QueryClientProvider client={queryClient}>
+          {children}
+        </QueryClientProvider>
+      </WagmiProvider>
+    );
+  } catch (error) {
+    console.error('Failed to initialize wallet provider:', error);
+    return <WalletErrorFallback>{children}</WalletErrorFallback>;
+  }
 }

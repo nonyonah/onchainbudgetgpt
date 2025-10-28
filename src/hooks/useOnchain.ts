@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAccount, useChainId } from 'wagmi';
-import { onchainService, TokenBalance, Portfolio, ENSProfile } from '@/lib/onchain/config';
+import { onchainService, ENSProfile } from '@/lib/onchain/config';
+import { TokenBalance, Portfolio } from '@/types/shared';
+import type { TokenBalance as OnchainTokenBalance, Portfolio as OnchainPortfolio } from '@/lib/onchain/config';
 
 interface UseOnchainReturn {
   // State
@@ -19,6 +21,26 @@ interface UseOnchainReturn {
   totalPortfolioValue: number;
   hasTokens: boolean;
 }
+
+// Transform onchain types to shared types
+const transformTokenBalance = (onchainToken: OnchainTokenBalance): TokenBalance => ({
+  symbol: onchainToken.symbol,
+  name: onchainToken.name,
+  balance: onchainToken.balance,
+  balanceFormatted: onchainToken.balanceFormatted,
+  value: onchainToken.value || 0,
+  isNative: onchainToken.isNative,
+  address: onchainToken.address,
+  decimals: onchainToken.decimals,
+  price: onchainToken.price,
+  change24h: onchainToken.change24h,
+});
+
+const transformPortfolio = (onchainPortfolio: OnchainPortfolio): Portfolio => ({
+  totalValue: onchainPortfolio.totalValue,
+  totalChange24h: onchainPortfolio.totalChange24h,
+  tokens: onchainPortfolio.tokens.map(transformTokenBalance),
+});
 
 export function useOnchain(): UseOnchainReturn {
   const { address, isConnected } = useAccount();
@@ -42,7 +64,7 @@ export function useOnchain(): UseOnchainReturn {
       setError(null);
       
       const balances = await onchainService.getTokenBalances(address, chainId);
-      setTokenBalances(balances);
+      setTokenBalances(balances.map(transformTokenBalance));
     } catch (error) {
       console.error('Error refreshing balances:', error);
       setError('Failed to fetch token balances');
@@ -63,7 +85,7 @@ export function useOnchain(): UseOnchainReturn {
       setError(null);
       
       const portfolioData = await onchainService.getPortfolio(address, chainId);
-      setPortfolio(portfolioData);
+      setPortfolio(transformPortfolio(portfolioData));
     } catch (error) {
       console.error('Error refreshing portfolio:', error);
       setError('Failed to fetch portfolio data');

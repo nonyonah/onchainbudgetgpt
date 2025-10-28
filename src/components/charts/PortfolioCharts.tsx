@@ -17,20 +17,7 @@ import {
   ResponsiveContainer,
   Treemap
 } from 'recharts';
-
-interface TokenBalance {
-  symbol: string;
-  name: string;
-  balance: string;
-  value: number;
-  isNative: boolean;
-}
-
-interface Portfolio {
-  totalValue: number;
-  totalChange24h: number;
-  tokens: TokenBalance[];
-}
+import { TokenBalance, Portfolio } from '@/types/shared';
 
 interface PortfolioChartsProps {
   tokenBalances: TokenBalance[];

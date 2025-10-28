@@ -31,14 +31,14 @@ const wagmiAdapter = new WagmiAdapter({
   ssr: true,
 });
 
-// Create modal
+// Create modal with error handling
 export const modal = createAppKit({
   adapters: [wagmiAdapter],
   networks: [mainnet, arbitrum, base, polygon, optimism],
   metadata,
   projectId,
   features: {
-    analytics: true,
+    analytics: false, // Disable analytics to avoid API calls
     email: true,
     socials: ['google', 'x', 'github', 'discord', 'apple'],
     emailShowWallets: true,
