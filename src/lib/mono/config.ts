@@ -1,4 +1,13 @@
-import { MonoConnect } from '@mono.co/connect.js';
+// Import the connect function from mono package
+let MonoConnect: any;
+try {
+  // The mono package exports a connect function, not a MonoConnect class
+  const monoPackage = require('@mono.co/connect.js');
+  MonoConnect = monoPackage.connect || monoPackage.default || monoPackage;
+} catch (error) {
+  console.warn('Mono connect could not be imported:', error);
+  MonoConnect = null;
+}
 
 export interface MonoConfig {
   publicKey: string;
@@ -53,30 +62,46 @@ export class MonoConnectService {
   }
 
   private initializeMonoConnect() {
-    this.monoConnect = new MonoConnect({
-      key: this.config.publicKey,
-      scope: this.config.scope.join(','),
-      data: {
-        customer: {
-          name: 'OnchainBudget User',
-          email: 'user@onchainbudget.com'
-        }
-      },
-      onSuccess: this.config.onSuccess,
-      onError: this.config.onError,
-      onClose: this.config.onClose
-    });
+    if (!MonoConnect) {
+      console.warn('Mono connect is not available');
+      return;
+    }
+
+    try {
+      const options = {
+        key: this.config.publicKey,
+        // Spread config first, then override specific properties
+        ...this.config,
+        onSuccess: this.config.onSuccess,
+        onClose: this.config.onClose,
+        onError: this.config.onError
+      };
+
+      // The mono connect function can be called as a function or constructor
+      if (typeof MonoConnect === 'function') {
+        this.monoConnect = MonoConnect(options);
+      } else {
+        console.warn('Mono connect is not a function');
+      }
+    } catch (error) {
+      console.error('Failed to initialize Mono connect:', error);
+      this.monoConnect = null;
+    }
   }
 
   public open() {
-    if (this.monoConnect) {
-      this.monoConnect.open();
+    if (this.monoConnect && typeof this.monoConnect.setup === 'function') {
+      this.monoConnect.setup();
+    } else {
+      console.warn('Mono connect is not available or setup method is not accessible');
     }
   }
 
   public close() {
-    if (this.monoConnect) {
+    if (this.monoConnect && typeof this.monoConnect.close === 'function') {
       this.monoConnect.close();
+    } else {
+      console.warn('Mono connect is not available or close method is not accessible');
     }
   }
 
