@@ -2,9 +2,8 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Bot, User } from 'lucide-react';
+import { Bot, User, ThumbsUp, ThumbsDown, RefreshCw, Copy } from 'lucide-react';
 import { ChatMessage as ChatMessageType } from '@/types/chat';
-import { formatDistanceToNow } from 'date-fns';
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -21,69 +20,40 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onActionClick }) => 
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
-      className={`flex gap-4 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
+      className={`flex gap-4 ${isUser ? 'justify-end' : 'justify-start'} group`}
     >
-      {/* Avatar */}
-      <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
-        isUser 
-          ? 'bg-[var(--grok-accent)]' 
-          : 'bg-gradient-to-br from-purple-500 to-blue-600'
-      }`}>
-        {isUser ? (
-          <User size={20} className="text-white" />
-        ) : (
-          <Bot size={20} className="text-white" />
-        )}
-      </div>
-
-      {/* Message Content */}
-      <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[80%]`}>
-        {/* Message Bubble */}
-        <div className={`chat-bubble ${
-          isUser ? 'chat-bubble-user' : 'chat-bubble-assistant'
-        }`}>
-          <div className="text-sm leading-relaxed whitespace-pre-wrap">
-            {message.content}
-          </div>
+      <div className={`flex gap-3 max-w-[85%] ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+        {/* Avatar */}
+        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${isUser ? 'bg-black' : 'bg-gray-200'}`}>
+          {isUser ? (
+            <User size={16} className="text-white" />
+          ) : (
+            <Bot size={16} className="text-gray-700" />
+          )}
         </div>
 
-        {/* Timestamp */}
-        <div className="text-xs text-[var(--grok-text-muted)] mt-1 px-2">
-          {formatDistanceToNow(message.timestamp, { addSuffix: true })}
+        {/* Message Content */}
+        <div className={`flex flex-col w-full ${isUser ? 'items-end' : 'items-start'}`}>
+          <div className={`rounded-2xl px-4 py-3 ${isUser ? 'bg-black text-white' : 'bg-gray-100 text-gray-900'}`}>
+            <div className="text-sm leading-relaxed whitespace-pre-wrap">
+              {message.content}
+            </div>
+          </div>
+
+          {/* Action Buttons (for assistant messages) */}
+          {isAssistant && message.actions && message.actions.length > 0 && (
+            <div className="flex gap-2 mt-3">
+              {message.actions.map((action) => (
+                <button
+                  key={action.id}
+                  onClick={() => onActionClick?.(action.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${action.type === 'primary' ? 'bg-black text-white hover:bg-gray-800' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}>
+                  {action.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-
-        {/* Action Buttons (for assistant messages) */}
-        {isAssistant && message.actions && message.actions.length > 0 && (
-          <div className="flex gap-2 mt-3">
-            {message.actions.map((action) => (
-              <button
-                key={action.id}
-                onClick={() => onActionClick?.(action.id)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  action.type === 'primary'
-                    ? 'bg-[var(--grok-accent)] text-white hover:bg-[var(--grok-accent-hover)]'
-                    : action.type === 'secondary'
-                    ? 'bg-[var(--grok-surface)] text-[var(--grok-text)] border border-[var(--grok-border)] hover:bg-[var(--grok-border)]'
-                    : 'text-[var(--grok-accent)] hover:text-[var(--grok-accent-hover)] hover:bg-[var(--grok-accent)]/10'
-                }`}
-              >
-                {action.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Message Actions (for assistant messages) */}
-        {isAssistant && (
-          <div className="flex gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button className="text-xs text-[var(--grok-text-muted)] hover:text-[var(--grok-text)] transition-colors">
-              Copy
-            </button>
-            <button className="text-xs text-[var(--grok-text-muted)] hover:text-[var(--grok-text)] transition-colors">
-              Regenerate
-            </button>
-          </div>
-        )}
       </div>
     </motion.div>
   );

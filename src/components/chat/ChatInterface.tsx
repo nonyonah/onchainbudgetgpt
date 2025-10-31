@@ -1,51 +1,71 @@
-'use client';
-
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, Wallet, CreditCard, Settings, MessageCircle, BarChart3, Plus } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import ChatMessage from './ChatMessage';
-import TypingIndicator from './TypingIndicator';
-import { FinancialDashboard } from '@/components/dashboard/FinancialDashboard';
-import { useChat } from '@/hooks/useChat';
+import React, { useState, useEffect } from 'react';
 import { useWallet } from '@/hooks/useWallet';
-import { useBank } from '@/hooks/useBank';
-import { useOnchain } from '@/hooks/useOnchain';
+import { WalletIcon, HistoryIcon, SendIcon, ChevronDownIcon, ArrowCircleUpIcon } from './Icons';
+import ChatMessage from './ChatMessage';
+import { ChatMessage as ChatMessageType } from '@/types/chat';
 
-interface ChatInterfaceProps {
-  onConnectWallet: () => void;
-  onConnectBank: () => void;
-  isWalletConnected: boolean;
-  isBankConnected: boolean;
-}
+const imgNavItemBase = "https://www.figma.com/api/mcp/asset/54f6eec0-959e-4d98-be26-115925121177";
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({
-  onConnectWallet,
-  onConnectBank,
-  isWalletConnected,
-  isBankConnected,
-}) => {
-  const { messages, sendMessage, isTyping, clearChat } = useChat();
-  const { address } = useWallet();
-  const { transactions } = useBank();
-  const { tokenBalances, portfolio } = useOnchain();
+// Default suggestion chips
+const defaultSuggestions = [
+  "Create Invoice",
+  "View Summary", 
+  "Send Reminder",
+  "Swap"
+];
+
+export function ChatInterface() {
+  const { isConnected, address, connectWallet, disconnectWallet, getShortAddress } = useWallet();
+  const [showDisconnect, setShowDisconnect] = useState(false);
   const [inputValue, setInputValue] = useState('');
-  const [currentView, setCurrentView] = useState<'chat' | 'dashboard'>('chat');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [messages, setMessages] = useState<ChatMessageType[]>([]);
+  const [suggestions, setSuggestions] = useState(defaultSuggestions);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showDisconnect) {
+        setShowDisconnect(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showDisconnect]);
+
+  const handleSendMessage = () => {
+    if (inputValue.trim()) {
+      const userMessage: ChatMessageType = {
+        id: Date.now().toString(),
+        type: 'user',
+        content: inputValue,
+        timestamp: new Date(),
+      };
+      setMessages((prevMessages) => [...prevMessages, userMessage]);
+
+      // Dummy AI response
+      setTimeout(() => {
+        const assistantMessage: ChatMessageType = {
+          id: (Date.now() + 1).toString(),
+          type: 'assistant',
+          content: `This is a dummy response to "${inputValue}"`,
+          timestamp: new Date(),
+          actions: [
+            { id: 'like', label: 'Like', type: 'primary' },
+            { id: 'dislike', label: 'Dislike', type: 'secondary' },
+            { id: 'refresh', label: 'Refresh', type: 'outline' },
+            { id: 'copy', label: 'Copy', type: 'outline' },
+          ]
+        };
+        setMessages((prevMessages) => [...prevMessages, assistantMessage]);
+      }, 1000);
+
+      setInputValue('');
+    }
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, isTyping]);
-
-  const handleSendMessage = async () => {
-    if (!inputValue.trim()) return;
-
-    await sendMessage(inputValue);
-    setInputValue('');
+  const handleSuggestionClick = (suggestion: string) => {
+    setInputValue(suggestion);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -54,199 +74,131 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       handleSendMessage();
     }
   };
-
-  const handleActionClick = (actionId: string) => {
-    switch (actionId) {
-      case 'connect-wallet':
-        onConnectWallet();
-        break;
-      case 'connect-bank':
-        onConnectBank();
-        break;
-      case 'view-portfolio':
-        setCurrentView('dashboard');
-        break;
-      case 'view-dashboard':
-        setCurrentView('dashboard');
-        break;
-      default:
-        console.log('Action clicked:', actionId);
-    }
-  };
-
-  const quickActions = [
-    {
-      icon: Wallet,
-      label: isWalletConnected ? 'Wallet Connected' : 'Connect Wallet',
-      action: onConnectWallet,
-      connected: isWalletConnected,
-    },
-    {
-      icon: CreditCard,
-      label: isBankConnected ? 'Bank Connected' : 'Connect Bank',
-      action: onConnectBank,
-      connected: isBankConnected,
-    },
-    {
-      icon: BarChart3,
-      label: 'Financial Dashboard',
-      action: () => setCurrentView('dashboard'),
-      connected: false,
-    },
-  ];
-
-  const placeholderTexts = [
-    "Ask me anything about your money...",
-    "How much did I spend on food this week?",
-    "Show my crypto portfolio breakdown",
-    "What's my biggest expense category?",
-    "Compare my spending to last month",
-  ];
-
-  const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentPlaceholder(prev => (prev + 1) % placeholderTexts.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
-
   return (
-    <div className="flex h-screen bg-[var(--grok-bg)]">
-      {/* Sidebar */}
-      <div className="w-64 bg-[var(--grok-surface)] border-r border-[var(--grok-border)] flex flex-col">
-        <div className="p-4 border-b border-[var(--grok-border)]">
-          <h1 className="text-xl font-bold text-[var(--grok-text)] flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">OB</span>
-            </div>
-            OnchainBudget
-          </h1>
-        </div>
-
-        <div className="flex-1 p-4">
-          <button className="w-full flex items-center gap-3 p-3 rounded-lg bg-[var(--grok-accent)] text-white hover:bg-[var(--grok-accent-hover)] transition-colors">
-            <Plus size={20} />
-            New Chat
-          </button>
-
-          <div className="mt-6">
-            <h3 className="text-sm font-medium text-[var(--grok-text-muted)] mb-3">Quick Actions</h3>
-            <div className="space-y-2">
-              {quickActions.map((action, index) => (
-                <button
-                  key={index}
-                  onClick={action.action}
-                  className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                    action.connected
-                      ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                      : 'bg-[var(--grok-border)] text-[var(--grok-text-muted)] hover:bg-[var(--grok-border)]/80'
-                  }`}
-                >
-                  <action.icon size={18} />
-                  <span className="text-sm">{action.label}</span>
-                </button>
-              ))}
+    <div className="bg-white box-border content-stretch flex flex-col items-center overflow-clip relative shrink-0 w-full" data-name="Chat" data-node-id="2421:18356">
+      <div className="bg-white content-stretch flex flex-col items-center overflow-clip relative shrink-0 w-full" data-name="Header navigation" data-node-id="2413:13428">
+        <div className="box-border content-stretch flex h-[72px] items-center justify-between px-[32px] py-0 relative shrink-0 w-full max-w-screen-xl" data-name="Container" data-node-id="2413:13429">
+          <div className="content-stretch flex gap-[16px] items-center relative shrink-0" data-name="Content" data-node-id="2413:13430">
+            <div className="content-stretch flex gap-[4px] items-center relative shrink-0" data-name="Navigation" data-node-id="2413:13432">
+              <div className="h-[70px] relative rounded-[6px] shrink-0 w-[122px]" data-name="_Nav item base" data-node-id="2413:13433">
+                <img alt="" className="absolute inset-0 max-w-none object-50%-50% object-cover pointer-events-none rounded-[6px] size-full" src={imgNavItemBase} />
+              </div>
             </div>
           </div>
-        </div>
-
-        <div className="p-4 border-t border-[var(--grok-border)]">
-          <button className="w-full flex items-center gap-3 p-3 rounded-lg text-[var(--grok-text-muted)] hover:bg-[var(--grok-border)] transition-colors">
-            <Settings size={18} />
-            <span className="text-sm">Settings</span>
-          </button>
+          <div className="content-stretch flex gap-[16px] items-center relative shrink-0" data-name="Content" data-node-id="2413:13451">
+            <div className="content-stretch flex gap-[4px] items-start relative shrink-0" data-name="Actions" data-node-id="2413:13453">
+              <div className="bg-white box-border content-stretch flex gap-[105px] items-start overflow-clip p-[10px] relative rounded-[6px] shrink-0" data-name="_Nav item button" data-node-id="2413:13456">
+                <div className="overflow-clip relative shrink-0 size-[20px] text-[#414651]" data-name="icon / history" data-node-id="2413:13457">
+                  <HistoryIcon />
+                </div>
+              </div>
+            </div>
+            {!isConnected ? (
+              <button
+                onClick={connectWallet}
+                className="bg-white border border-[#d5d7da] border-solid relative rounded-[8px] shrink-0 hover:bg-gray-50 transition-colors"
+                data-name="_Button base"
+                data-node-id="2467:14596"
+              >
+                <div className="box-border content-stretch flex gap-[8px] items-center justify-center overflow-clip px-[16px] py-[10px] relative rounded-[inherit]">
+                  <div className="overflow-clip relative shrink-0 size-[20px] text-[#414651]" data-name="icon / wallet" data-node-id="I2467:14596;1037:34320">
+                    <WalletIcon />
+                  </div>
+                  <p className="font-['Inter:Semi_Bold',sans-serif] font-semibold leading-[20px] not-italic relative shrink-0 text-[#414651] text-[14px]" data-node-id="I2467:14596;1037:33914">
+                    Connect Wallet
+                  </p>
+                </div>
+              </button>
+            ) : (
+              <div className="relative z-50">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowDisconnect(!showDisconnect);
+                  }}
+                  className="bg-white border border-[#d5d7da] border-solid relative rounded-[8px] shrink-0 hover:bg-gray-50 transition-colors"
+                  data-name="_Button base"
+                  data-node-id="2467:14596"
+                >
+                  <div className="box-border content-stretch flex gap-[8px] items-center justify-center overflow-clip px-[16px] py-[10px] relative rounded-[inherit]">
+                    <div className="overflow-clip relative shrink-0 size-[20px] text-[#414651]" data-name="icon / wallet" data-node-id="I2467:14596;1037:34320">
+                      <WalletIcon />
+                    </div>
+                    <p className="font-['Inter:Semi_Bold',sans-serif] font-semibold leading-[20px] not-italic relative shrink-0 text-[#414651] text-[14px]" data-node-id="I2467:14596;1037:33914">
+                      {getShortAddress()}
+                    </p>
+                  </div>
+                </button>
+                {showDisconnect && (
+                  <div className="absolute top-full right-0 mt-2 bg-white border border-[#d5d7da] rounded-[8px] shadow-lg z-50 min-w-[160px]">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        disconnectWallet();
+                        setShowDisconnect(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-[#414651] hover:bg-gray-50 rounded-[8px] text-[14px] whitespace-nowrap"
+                    >
+                      Disconnect Wallet
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
-        {/* View Toggle */}
-        <div className="p-4 border-b border-[var(--grok-border)]">
-          <div className="flex space-x-2 bg-[var(--grok-surface)] p-1 rounded-lg">
-            <button
-              onClick={() => setCurrentView('chat')}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                currentView === 'chat'
-                  ? 'bg-[var(--grok-accent)] text-white'
-                  : 'text-[var(--grok-text-muted)] hover:text-[var(--grok-text)]'
-              }`}
-            >
-              <MessageCircle size={16} className="inline mr-2" />
-              Chat
-            </button>
-            <button
-              onClick={() => setCurrentView('dashboard')}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                currentView === 'dashboard'
-                  ? 'bg-[var(--grok-accent)] text-white'
-                  : 'text-[var(--grok-text-muted)] hover:text-[var(--grok-text)]'
-              }`}
-            >
-              <BarChart3 size={16} className="inline mr-2" />
-              Dashboard
-            </button>
-          </div>
+      <div className="flex-1 w-full max-w-screen-md mx-auto p-4 overflow-y-auto">
+        <div className="flex flex-col gap-4">
+          {messages.map((message) => (
+            <ChatMessage key={message.id} message={message} />
+          ))}
         </div>
-
-        {/* Content Area */}
-        {currentView === 'chat' ? (
-          <>
-            {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              <AnimatePresence>
-                {messages.map((message) => (
-                  <ChatMessage 
-                    key={message.id} 
-                    message={message} 
-                    onActionClick={handleActionClick}
-                  />
-                ))}
-              </AnimatePresence>
-              
-              {isTyping && <TypingIndicator />}
-              <div ref={messagesEndRef} />
-            </div>
-          </>
-        ) : (
-          <div className="flex-1 overflow-y-auto p-6">
-            <FinancialDashboard 
-              transactions={transactions}
-              tokenBalances={tokenBalances}
-              portfolio={portfolio}
-            />
-          </div>
-        )}
-
-        {/* Input Area */}
-        <div className="p-6 border-t border-[var(--grok-border)]">
-          <div className="relative">
-            <input
-              ref={inputRef}
-              type="text"
+      </div>
+      <div className="box-border content-stretch flex flex-col gap-[42px] items-center overflow-clip px-[32px] py-0 relative shrink-0 w-full" data-name="Content" data-node-id="2421:18489">
+        <div className="content-stretch flex flex-col gap-[21px] items-center relative shrink-0 w-full" data-name="Container" data-node-id="2470:15832">
+          <div className="bg-white border border-[#e9eaeb] border-solid relative rounded-[10px] shrink-0 w-[793px] h-[74px] flex items-center pl-[26px] pr-[21px]" data-name="Chat box" data-node-id="2421:18360">
+            <input 
+              type="text" 
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder={placeholderTexts[currentPlaceholder]}
-              className="w-full bg-[var(--grok-surface)] border border-[var(--grok-border)] rounded-2xl px-6 py-4 pr-14 text-[var(--grok-text)] placeholder-[var(--grok-text-muted)] focus:outline-none glow-border transition-all"
+              placeholder="Ask me anything..." 
+              className="font-['Inter:Medium',sans-serif] font-medium leading-[28px] not-italic flex-1 text-[18px] text-[#000] placeholder:text-[rgba(0,0,0,0.5)] text-left bg-transparent focus:outline-none border-none"
+              data-node-id="2469:14600" 
             />
             <button
               onClick={handleSendMessage}
               disabled={!inputValue.trim()}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 rounded-xl bg-[var(--grok-accent)] text-white hover:bg-[var(--grok-accent-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className={`relative shrink-0 size-[32px] ml-[10px] transition-opacity border-none bg-transparent p-0 ${
+                inputValue.trim() 
+                  ? 'opacity-100 cursor-pointer' 
+                  : 'opacity-50 cursor-not-allowed'
+              }`}
+              data-name="ArrowCircleUp" 
+              data-node-id="2469:14601"
             >
-              <Send size={18} />
+              <ArrowCircleUpIcon />
             </button>
           </div>
-          
-          <p className="text-xs text-[var(--grok-text-muted)] mt-2 text-center">
-            OnchainBudget GPT can make mistakes. Consider checking important information.
-          </p>
+          <div className="content-stretch flex gap-[14px] items-center relative shrink-0" data-name="Suggestion" data-node-id="2470:15829">
+            {suggestions.map((suggestion, index) => (
+              <button
+                key={index}
+                onClick={() => handleSuggestionClick(suggestion)}
+                className="bg-white border border-[#e9eaeb] border-solid relative rounded-[20px] shrink-0 hover:bg-gray-50 transition-colors cursor-pointer"
+                data-name="Chip"
+              >
+                <div className="box-border content-stretch flex gap-[8px] items-center justify-center overflow-clip pl-[12px] pr-[8px] py-[6px] relative rounded-[inherit]">
+                  <p className="font-['Inter:Medium',sans-serif] font-medium leading-[20px] not-italic relative shrink-0 text-[#414651] text-[14px]">
+                    {suggestion}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>
   );
-};
-
-export { ChatInterface };
+}

@@ -28,8 +28,7 @@ body {
 
 body {
   color: var(--grok-text);
-  background: var(--grok-bg);
-  background-image: var(--grok-gradient);
+  background: white;
   min-height: 100vh;
 }
 
